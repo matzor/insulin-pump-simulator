@@ -3,3 +3,5 @@ Simulation of the physical mechanisms of an insulin pump. Made as part of a Mast
 
 # Simulator
 Work in progress. More documentation will be added. 
+
+Simulator is run and configured in insulin_pump.m

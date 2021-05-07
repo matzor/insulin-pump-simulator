@@ -20,6 +20,8 @@ back_pressure = "off";       %"on"/"off", adds off-set to pressure.
 
 sim_gravity = "off";        %"on"/"off", simulates pressure effects caaused by gravity
 
+random_friction = false;
+
 % Pump settings
 basal_rate = 1;             %[U/h]
 n_pulses_per_hour = 20;      %number of motoractivations per hour for basal rate
@@ -62,63 +64,78 @@ iis_pres_dia_value = 2e-10;  %[m/Pa] %5e-8
 %s_per_U = 40;                  %[s], 0.9ml/h
 %s_per_U = 2;   
 %Alternatively, input in [ml/min]
-flow_ml_min = 0.05;                                             %[ml/min]
-s_per_U = 60/flow_ml_min / 100;                                 %[s]
+flow_ml_min = 0.05;                                          %[ml/min]
+s_per_U = 60/flow_ml_min / 100;                              %[s]
 
 %Pump reservoir
-reservoir_volume = 3;                                           %[ml]
-reservoir_len = 2.5;                                            %[cm]
-piston_length = reservoir_len;                                  %[cm]
-reservoir_radius = sqrt(reservoir_volume/(pi*piston_length));   %[cm]
-piston_area = pi*reservoir_radius^2;                            %[cm2]
+reservoir_volume = 3;                                        %[ml]
+reservoir_len = 2.5;                                         %[cm]
+piston_length = reservoir_len;                               %[cm]
+reservoir_radius = sqrt(reservoir_volume/(pi*piston_length));%[cm]
+piston_area = pi*reservoir_radius^2;                         %[cm2]
 
 
 %Pump mechanics
-screw_lead = 0.1;                                               %[cm] per rotation
-spring_k1 = 1.5e4;                                              %[N/m]
-spring_k2 = 50;                                                 %[N/m]
-damper_d1 = 5.0e4;                                              %[N/(m/s)]
-damper_d2 = 5;                                                  %[N/(m/s)]
+screw_lead = 0.1;                                            %[cm] per rotation
+spring_k1 = 1.5e4;                                           %[N/m]
+damper_d1 = 5.0e4;                                           %[N/(m/s)]
 
 
 %Cylinder friction
-f_c = 0.7;                                                      %[N]
-f_cp = 1e-6;                                                    %[N/Pa]
-f_brk_c = 1.1;                                                  %[]
-f_v = 10000;                                                    %[N/(m/s)]
-v_limit = 0.5e-6;                                               %[cm/s]
+f_c = 0.7;                                                   %[N]
+f_cp = 1e-6;                                                 %[N/Pa]
+f_brk_c = 1.1;                                               %[]
+f_v = 10000;                                                 %[N/(m/s)]
+v_limit = 0.5e-6;                                            %[cm/s]
 
 
 %DC motor parameters
 %using Faulhaber Series 0816 003 SR
-m_volt_nom = 3;                                                 %[V]
-m_arm_res = 5.4;                                                %[ohm]
-m_arm_inductance = 53;                                          %[uH]
-m_back_emf = 0.000221;                                          %[V/rpm]
-m_rotor_inertia = 0.051;                                        %[g*cm^2]
+m_volt_nom = 3;                                              %[V]
+m_arm_res = 5.4;                                             %[ohm]
+m_arm_inductance = 53;                                       %[uH]
+m_back_emf = 0.000221;                                       %[V/rpm]
+m_rotor_inertia = 0.051;                                     %[g*cm^2]
 
 
-%Fluid parameters
-f_density = 1090; %998.21;                                      %[kg/m^3]
-f_intrinsic_viscosity = 9;                                      %[cc/g] @20c
-%f_intrinsic_viscosity = 119;                                   %[cc/g] @40c
-f_intrinsic_viscosity = f_intrinsic_viscosity * 10e-6 / 10e-3;  %[m^3/kg]
-f_viscosity = f_intrinsic_viscosity / f_density;                %[m^2/s]
-f_bmodulus = 2.1;                                               %[GPa]
+%% Fluid parameters
+f_density = 1090; %998.21;                                   %[kg/m^3]
+f_temp = 20;                                                 %[c*], from 20-40c
+f_ph = 2;                       %1: pH 4.1, 2: pH 7.5, 3: pH 9.1
+f_bmodulus = 2.1;                                            %[GPa]
 
 
 %Patient simulator, [m]
-pat_pressure_diameter = 5e-6;                                   %[m]
-pat_area = 2.5e-3;                                              %[m]
-pat_len = 3.5e-3;                                               %[m]
-pat_tau = 1500 / (60 / s_per_U);                                %[s]
-pat_dissipation = 2e-4;                                         %[mm^s]
+pat_pressure_diameter = 5e-6;                                %[m]
+pat_area = 2.5e-3;                                           %[m]
+pat_len = 3.5e-3;                                            %[m]
+pat_tau = 1500 / (60 / s_per_U);                             %[s]
+pat_dissipation = 2e-4;                                      %[mm^s]
+
+%% Randomizing parameters (IF set to true)
+
+if random_friction == true
+    %Pump mechanics
+    spring_k1 = 1e4 + (1e5 - 1e4)*rand                                           %[N/m]
+    damper_d1 = 1e4 + (1e5 - 1e4)*rand                                           %[N/(m/s)]
+    %Cylinder friction
+    f_c = 0.5 + (1.5- 0.5)*rand                                                   %[N]
+    f_brk_c = 1 + (1.5 - 1)*rand                                               %[]
+    %Fluid parameters
+    f_temp = randi([20, 40])                                                 %[c*], from 20-40c
+    f_ph = randi([1, 3])                       %1: pH 4.1, 2: pH 7.5, 3: pH 9.1
+    %Patient simulator, [m]
+    pat_pressure_diameter = 1e-6 + (10e-6 - 1e-6)*rand                                %[m]
+    pat_area = 1e-3 + (3e-3 - 1e-3)*rand                                           %[m]
+    pat_len = 1e-3 + (4e-3 - 1e-3)*rand                                            %[m]
+    pat_dissipation = 1e-4 + (4e-4 - 1e-4)*rand                                     %[mm^s]
+end
 
 %% Calculating various system values
 %NB: modifying anything below may break simulator
 
-U_per_ml = 1/100;                                               %1U = 1/100ml
-m_volt = m_volt_nom;                                            %[V], change motor voltage to change infusion speed (s_per_u)
+U_per_ml = 1/100;                                            %1U = 1/100ml
+m_volt = m_volt_nom;                                         %[V], change motor voltage to change infusion speed (s_per_u)
 
 %calculating step sizes
 u_per_basal_pulse = basal_rate / n_pulses_per_hour;
@@ -132,6 +149,29 @@ input_rpm = 13570;
 %input_rpm = 2262;
 output_rpm = 60/s_per_U * piston_displacement_per_unit/screw_lead;
 gear_ratio = input_rpm / output_rpm;
+
+% Calculating fluid viscosity
+f_temperature = [20 25 30 35 40];                            %[c*]
+f_ph_values = [4.1 7.5 9.1];                                 %[pH]
+temp_range = 20:40;
+% Insulin viscosity depend on temperature (col) and pH (row)
+% data from Bohidar1998
+                                %20 25  30  35  40  degrees C
+insulin_intrinsic_viscosity =   [12 22  45  87  145    %pH 4.1
+                                 9  19  31  62  119    %pH 7.5
+                                 10 17  30  55  77];   %pH 9.1
+%Fitting viscosities to a curve
+f_pol4 = polyfit(f_temperature, insulin_intrinsic_viscosity(1,:), 2);
+f_pol7 = polyfit(f_temperature, insulin_intrinsic_viscosity(2,:), 2);
+f_pol9 = polyfit(f_temperature, insulin_intrinsic_viscosity(3,:), 2);
+intrinsic_viscosity = [ polyval(f_pol4, temp_range)
+                        polyval(f_pol7, temp_range)
+                        polyval(f_pol9, temp_range)];
+
+f_intrinsic_viscosity = intrinsic_viscosity(f_ph, f_temp-19)  %[cc/g]
+f_intrinsic_viscosity = f_intrinsic_viscosity * 10e-6 / 10e-3;%[m^3/kg]
+f_viscosity = f_intrinsic_viscosity / f_density;             %[m^2/s]
+
 
 
 %IIS with or without cannula

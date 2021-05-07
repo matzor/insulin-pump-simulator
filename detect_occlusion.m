@@ -85,8 +85,8 @@ function [occ_detected,occ_time] = detect_occlusion(simdata)
 %     movegui("south");
 
     %% Checking for signs of occlusion 
-    tau_limit = 5;
-    p_limit = 10000;
+    tau_limit = 10;
+    p_limit = 30000;
     occ_detected = false;
     occ_time = 0;
     occ_idx = 0;

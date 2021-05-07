@@ -29,8 +29,8 @@ function [] = plot_simulation(simdata, save_figures, filename)
     xlabel("Time (hh:mm:ss)");
     movegui("northwest");
     if save_figures == true
-        filename_suffix = filename+".png";
-        saveas(gcf, "plot/p_tube"+filename_suffix);
+        filename_suffix = filename+".eps";
+        saveas(gcf, "plot/p_tube"+filename_suffix, 'epsc');
     end
     
 %     %Tube pressure
@@ -63,7 +63,7 @@ function [] = plot_simulation(simdata, save_figures, filename)
     ylabel("Flow (U/s)");
     xlabel("Time (hh:mm:ss)");
     if save_figures == true
-        saveas(gcf, "plot/flow_tube"+filename_suffix);
+        saveas(gcf, "plot/flow_tube"+filename_suffix), 'epsc';
     end
     
     %Insulin flow [U/s] out of pump
@@ -78,7 +78,7 @@ function [] = plot_simulation(simdata, save_figures, filename)
     ylabel("Flow (U/s)");
     xlabel("Time (hh:mm:ss)");
     if save_figures == true
-        saveas(gcf, "plot/flow_pump"+filename_suffix);
+        saveas(gcf, "plot/flow_pump"+filename_suffix, 'epsc');
     end
 
     %Insulin pulse volume
@@ -95,7 +95,7 @@ function [] = plot_simulation(simdata, save_figures, filename)
     ylabel("Units per pulse (U)");
     xlabel("Time (hh:mm:ss)");
     if save_figures == true
-        saveas(gcf, "plot/pulse_volume"+filename_suffix);
+        saveas(gcf, "plot/pulse_volume"+filename_suffix, 'epsc');
     end
 
     %Cumulative volume
@@ -108,7 +108,7 @@ function [] = plot_simulation(simdata, save_figures, filename)
     ylabel("Volume (U)");
     xlabel("Time (hh:mm:ss)");
     if save_figures == true
-        saveas(gcf, "plot/volume_tube"+filename_suffix);
+        saveas(gcf, "plot/volume_tube"+filename_suffix, 'epsc');
     end
 
     %Piston position
@@ -125,7 +125,7 @@ function [] = plot_simulation(simdata, save_figures, filename)
     xlabel("Time (hh:mm:ss)");
     movegui("center");
     if save_figures == true
-        saveas(gcf, "plot/pos_piston"+filename_suffix);
+        saveas(gcf, "plot/pos_piston"+filename_suffix, 'epsc');
     end
 
     %Plunger force
@@ -138,7 +138,7 @@ function [] = plot_simulation(simdata, save_figures, filename)
     xlabel("Time (hh:mm:ss)");
     movegui("west");
     if save_figures == true
-        saveas(gcf, "plot/force_piston"+filename_suffix);
+        saveas(gcf, "plot/force_piston"+filename_suffix, 'epsc');
     end
 
     %Motor voltage
@@ -150,7 +150,7 @@ function [] = plot_simulation(simdata, save_figures, filename)
     ylabel("Volt (V)");
     movegui("east");
     if save_figures == true
-        saveas(gcf, "plot/m_voltage"+filename_suffix);
+        saveas(gcf, "plot/m_voltage"+filename_suffix, 'epsc');
     end
 
     %Motor current
@@ -162,7 +162,7 @@ function [] = plot_simulation(simdata, save_figures, filename)
     xlabel("Time (hh:mm:ss)");
     movegui("east");
     if save_figures == true
-        saveas(gcf, "plot/m_current"+filename_suffix);
+        saveas(gcf, "plot/m_current"+filename_suffix, 'epsc');
     end
 
 

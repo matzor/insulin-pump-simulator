@@ -12,7 +12,7 @@ rgb =[0.8500    0.3250    0.0980
 data1 = open("data/simdata_t72000_basal1_bolus0_occlusion_off_gravity_off.mat");
 data2 = open("data/simdata_t72000_basal1_bolus0_occlusion_gradual_gravity_off.mat");
 
-occlusion = "Gradual occlusion";
+occlusion = "Occlusion";
 
 %converting time format
 s1 = seconds(data1.simdata.p_tube.p1.Time);
@@ -22,8 +22,8 @@ s2.Format = 'hh:mm:ss';
 
 tstart = seconds(0);
 tend = seconds(inf);
-%tstart = seconds(3600*2 );
-%tend = seconds(3600*2 + 60*10);
+tstart = seconds(3600*12 );
+tend = seconds(3600*18);
 tstart.Format = 'hh:mm:ss';
 tend.Format = 'hh:mm:ss';
 xaxis_lim = [tstart tend];
@@ -32,6 +32,8 @@ m3_to_u = 1000 * 1000 * 100; %m3 to l, l to ml, ml to u
 
 
 p1 = data1.simdata.p_tube.p1.Data;
+p1_2 = data1.simdata.p_tube.p2.Data;
+p1_3 = data1.simdata.p_tube.p3.Data;
 p2 = data2.simdata.p_tube.p1.Data;
 %p_occ = data2.simdata.p_tube();
 
@@ -52,6 +54,19 @@ plot(s1, p1);
 xlim(xaxis_lim);
 title("Infusion tube pressure");
 legend(occlusion, "No occlusion");
+ylabel("Pressure (Pa)");
+xlabel("Time (hh:mm:ss)");
+
+figure();
+colororder(rgb);
+hold on;
+grid on;
+plot(s1, p1);
+plot(s1, p1_2);
+plot(s1, p1_3);
+xlim(xaxis_lim);
+title("Infusion tube pressure along the tube");
+legend("p1", "p2", "p3");
 ylabel("Pressure (Pa)");
 xlabel("Time (hh:mm:ss)");
 
@@ -151,7 +166,7 @@ plot(s2, q2.f1.Data);
 plot(s2, q2.f2.Data);
 plot(s2, q2.f3.Data);
 xlim(xaxis_lim);
-title("Flow of insulin");
+title("Flow of insulin along the tube");
 legend("Flow 1","Flow 2", "Flow 3");
 ylabel("Flow (U/s)");
 xlabel("Time (hh:mm:ss)");

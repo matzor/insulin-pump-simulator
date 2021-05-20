@@ -1,5 +1,8 @@
 %%% Insulin pump simulator
-%%Based on https://se.mathworks.com/videos/modeling-an-insulin-infusion-pump-87684.html
+% Mads Formo, 2021
+
+% Simscape diagram based on https://se.mathworks.com/videos/modeling-an-insulin-infusion-pump-87684.html
+
 close all;
 clear all;
 
@@ -10,32 +13,32 @@ sim_time = 3600 * 10;
 plot_results = true;
 save_figures = false;
 
-
-occlusion = "off";          %"on"/"off", occlusion starts at occ_time, 
-                            %"partial", "gradual"
-occ_time = 3600*2;          %time occlusion occurs if "on"
-iis_needle = "on";          %"on"/"off", to test effect of narrowing delivery 
-                            %path through needle
-back_pressure = "off";       %"on"/"off", adds off-set to pressure.              
+back_pressure = "off";      %"on"/"off", adds off-set to pressure.              
 
 sim_gravity = "off";        %"on"/"off", simulates pressure effects caaused by gravity
 
-random_friction = false;
+random_friction = false;    %randomizes friction parameters
+random_doses = false;       %randomizes pump settings
 
 % Pump settings
 basal_rate = 1;             %[U/h]
-n_pulses_per_hour = 20;      %number of motoractivations per hour for basal rate
+n_pulses_per_hour = 20;     %number of motoractivations per hour for basal rate
                             
 % Optional pump settings
 %Give extra insulin bolus of n units at time x
-bolus_size = 10;             %[U]
+bolus_size = 10;            %[U]
 bolus_time = 3600*3;
 
 %Simulate a pump stop
-pump_stop_time = 3600*6;  %time at which basal pumping stops
+pump_stop_time = 3600*6;    %time at which basal pumping stops
                             %stop_time > sim_time means pumping will never
                             %stop during simulation
 
+%occlusion settings
+occlusion = "off";          %"on"/"off", complete occlusion starts at occ_time, 
+                                %"gradual"
+occ_time = 3600*2;              %time occlusion occurs if "on"
+occ_tau = 2000;                 %time constant for "gradual" occlusion
 
 %% Insulin infusion set parameters
 iis_diameter = 1;               %[mm]
@@ -44,6 +47,8 @@ iis_element_len = iis_len/3;    %[m]
 cannula_size = 0.286/2;         %[mm], radius
                                 %cannula size range from 0.286 - 0.455mm
                                 %diameter
+cannula_area = pi*(cannula_size)^2;  
+                                
 iis_area = pi*iis_diameter^2;   %[mm^2]                           
 iis_elevation = 0.5;            %[m], pump elevation relative to infusion site
                                 %only active if sim_gravity == "on"
@@ -76,72 +81,84 @@ piston_area = pi*reservoir_radius^2;                         %[cm2]
 
 
 %Pump mechanics
-screw_lead = 0.1;                                            %[cm] per rotation
-spring_k1 = 1.5e4;                                           %[N/m]
-damper_d1 = 5.0e4;                                           %[N/(m/s)]
+screw_lead = 0.1;                                    %[cm] per rotation
+spring_k1 = 1.5e4;                                   %[N/m]
+damper_d1 = 5.0e4;                                   %[N/(m/s)]
 
 
 %Cylinder friction
-f_c = 0.7;                                                   %[N]
-f_cp = 1e-6;                                                 %[N/Pa]
-f_brk_c = 1.1;                                               %[]
-f_v = 10000;                                                 %[N/(m/s)]
-v_limit = 0.5e-6;                                            %[cm/s]
+f_c = 0.7;                                           %[N]
+f_cp = 1e-6;                                         %[N/Pa]
+f_brk_c = 1.1;                                       %[]
+f_v = 10000;                                         %[N/(m/s)]
+v_limit = 0.5e-6;                                    %[cm/s]
 
 
 %DC motor parameters
 %using Faulhaber Series 0816 003 SR
-m_volt_nom = 3;                                              %[V]
-m_arm_res = 5.4;                                             %[ohm]
-m_arm_inductance = 53;                                       %[uH]
-m_back_emf = 0.000221;                                       %[V/rpm]
-m_rotor_inertia = 0.051;                                     %[g*cm^2]
+m_volt_nom = 3;                                      %[V]
+m_arm_res = 5.4;                                     %[ohm]
+m_arm_inductance = 53;                               %[uH]
+m_back_emf = 0.000221;                               %[V/rpm]
+m_rotor_inertia = 0.051;                             %[g*cm^2]
 
 
 %% Fluid parameters
-f_density = 1090; %998.21;                                   %[kg/m^3]
-f_temp = 20;                                                 %[c*], from 20-40c
-f_ph = 2;                       %1: pH 4.1, 2: pH 7.5, 3: pH 9.1
-f_bmodulus = 2.1;                                            %[GPa]
+f_density = 1090; %998.21;                          %[kg/m^3]
+f_temp = 20;                                        %[c*], from 20-40c
+f_ph = 2;   %1: pH 4.1, 2: pH 7.5, 3: pH 9.1        %[pH]
+f_bmodulus = 2.1;                                   %[GPa]
 
 
 %Patient simulator, [m]
-pat_pressure_diameter = 5e-6;                                %[m]
-pat_area = 2.5e-3;                                           %[m]
-pat_len = 3.5e-3;                                            %[m]
-pat_tau = 1500 / (60 / s_per_U);                             %[s]
-pat_dissipation = 2e-4;                                      %[mm^s]
+pat_pressure_diameter = 5e-6;                       %[m]
+pat_area = 2.5e-3;                                  %[m]
+pat_len = 3.5e-3;                                   %[m]
+pat_dissipation = 2e-4;                             %[mm^s]
 
 %% Randomizing parameters (IF set to true)
 
 if random_friction == true
     %Pump mechanics
-    spring_k1 = 1e4 + (1e5 - 1e4)*rand                                           %[N/m]
-    damper_d1 = 1e4 + (1e5 - 1e4)*rand                                           %[N/(m/s)]
+    %random number between [a, b]: a + (b-a)*rand 
+    spring_k1 = 1e4 + (1e5 - 1e4)*rand;                 %[N/m]
+    damper_d1 = 1e4 + (1e5 - 1e4)*rand;                 %[N/(m/s)]
     %Cylinder friction
-    f_c = 0.5 + (1.5- 0.5)*rand                                                   %[N]
-    f_brk_c = 1 + (1.5 - 1)*rand                                               %[]
+    f_c = 0.5 + (1.5- 0.5)*rand;                        %[N]
+    f_brk_c = 1 + (1.5 - 1)*rand;                       %[]
     %Fluid parameters
-    f_temp = randi([20, 40])                                                 %[c*], from 20-40c
-    f_ph = randi([1, 3])                       %1: pH 4.1, 2: pH 7.5, 3: pH 9.1
+    f_temp = randi([20, 40]);                           %[c*], from 20-40c
+    f_ph = randi([1, 3]);  %1: pH 4.1, 2: pH 7.5, 3: pH 9.1
     %Patient simulator, [m]
-    pat_pressure_diameter = 1e-6 + (10e-6 - 1e-6)*rand                                %[m]
-    pat_area = 1e-3 + (3e-3 - 1e-3)*rand                                           %[m]
-    pat_len = 1e-3 + (4e-3 - 1e-3)*rand                                            %[m]
-    pat_dissipation = 1e-4 + (4e-4 - 1e-4)*rand                                     %[mm^s]
+    pat_pressure_diameter = 1e-6 + (10e-6 - 1e-6)*rand; %[m]
+    pat_area = 1e-3 + (3e-3 - 1e-3)*rand;               %[m]
+    pat_len = 1e-3 + (4e-3 - 1e-3)*rand;                %[m]
+    pat_dissipation = 1e-4 + (4e-4 - 1e-4)*rand;        %[mm^s]
+    occ_tau = randi([1000, 3000]); 
+    occ_time = randi([1, sim_time]);
+end
+
+if random_doses == true
+    % Pump settings
+    basal_rate = 0.1 + (2.5 - 0.1)*rand;             %[U/h]
+    n_pulses_per_hour = randi([10,20]);      %number of motoractivations per hour for basal rate
+    bolus_size = randi([1,20]);             %[U]
+    bolus_time = randi([1,sim_time]);
+    pump_stop_time = randi([1,sim_time*2]);
+    s_per_U = randi([1, 60]);
 end
 
 %% Calculating various system values
 %NB: modifying anything below may break simulator
 
 U_per_ml = 1/100;                                            %1U = 1/100ml
-m_volt = m_volt_nom;                                         %[V], change motor voltage to change infusion speed (s_per_u)
+m_volt = m_volt_nom;                                         %[V],
 
 %calculating step sizes
 u_per_basal_pulse = basal_rate / n_pulses_per_hour;
 m_pulse_width = u_per_basal_pulse * s_per_U;
 m_pulse_period = 3600 / n_pulses_per_hour;
-piston_displacement_per_unit = U_per_ml / (piston_area);  %[cm]
+piston_displacement_per_unit = U_per_ml / (piston_area);    %[cm]
 piston_displacement_per_basal_dose = piston_displacement_per_unit * u_per_basal_pulse;    %[cm]
 
 %setting gear box ratio
@@ -168,23 +185,16 @@ intrinsic_viscosity = [ polyval(f_pol4, temp_range)
                         polyval(f_pol7, temp_range)
                         polyval(f_pol9, temp_range)];
 
-f_intrinsic_viscosity = intrinsic_viscosity(f_ph, f_temp-19)  %[cc/g]
-f_intrinsic_viscosity = f_intrinsic_viscosity * 10e-6 / 10e-3;%[m^3/kg]
-f_viscosity = f_intrinsic_viscosity / f_density;             %[m^2/s]
+f_intrinsic_viscosity = intrinsic_viscosity(f_ph, f_temp-19);   %[cc/g]
+f_intrinsic_viscosity = f_intrinsic_viscosity * 10e-6 / 10e-3;  %[m^3/kg]
+f_viscosity = f_intrinsic_viscosity / f_density;                %[m^2/s]
+
+pat_tau = 1500 / (60 / s_per_U);                    %[s]
 
 
-
-%IIS with or without cannula
-if iis_needle == "on"
-    cannula_size = cannula_size;
-else
-    cannula_size = iis_diameter/2;
-end
-cannula_area = pi*(cannula_size)^2;
 
 %occlusion on or off
 occ_sw = 0;
-occ_tau = 1;
 if occlusion == "on"
     occ_area = 1e-16;
 elseif occlusion == "partial"
@@ -192,7 +202,6 @@ elseif occlusion == "partial"
 elseif occlusion == "gradual"
     occ_sw = 1;
     occ_area = iis_area;    
-    occ_tau = 2000;
 else
     occ_area = iis_area;
 end

@@ -7,7 +7,6 @@ The simulator can be used to improve currently available insulin-glucose simulat
 The project was made as part of a Master's thesis for biomedical cybernetics course (TTK4900) at NTNU related to implementing additional safety features to an Artificial Pancreas system, such as improved occlusion detection. Made in conjunction with Artificial Pancreas Trondheim (APT).
 
 # Simulator
-Work in progress. More documentation will be added. 
 
 Simulator is run and configured in insulin_pump.m
 
